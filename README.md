@@ -1,6 +1,7 @@
 # SumNote
 
-[sumnote.vercel.app](https://sumnote.vercel.app/)
+Web app: [sumnote.vercel.app](https://sumnote.vercel.app/)
+APK: [SumNote.APK](https://github.com/muhallilahnaf/SumNote/blob/master/apk/app-release-signed.apk)
 
 **SumNote** is an offline-first notepad with live calculations. Write
 ordinary notes and amounts line by line, and SumNote calculates a
@@ -35,6 +36,7 @@ Each line is evaluated independently.
 
 Examples:
 
+```
   Line                        Contribution
   ------------------------- --------------
   `Pocket money 200`                `+200`
@@ -45,6 +47,7 @@ Examples:
   `Share 100 / 4`                    `+25`
   `Bought 2 packs for 50`            `+50`
   `Meeting tomorrow`                   `0`
+```
 
 Supported operations are multiplication (`x`, `X`, `×`, `*`) and
 division (`/`) with a single operation on a line. Lines containing
@@ -125,6 +128,31 @@ npm run build
 Deploy the generated `dist/` directory. Use HTTPS for production PWA
 installation and service-worker support.
 
+## Signed APK
+
+Generate signed apk using [@bubblewrap/cli](https://www.npmjs.com/package/@bubblewrap/cli).
+
+``` bash
+npm i -g @bubblewrap/cli
+mkdir apk
+cd apk
+bubblewrap init --manifest https://sumnote.vercel.app/manifest.webmanifest
+bubblewrap build
+```
+
+[Signed APK link](https://github.com/muhallilahnaf/SumNote/blob/master/apk/app-release-signed.apk)
+
+### APK Details:
+Domain: sumnote.vercel.app
+Application name: SumNote
+Short name: SumNote
+Application ID: app.muhallilahnaf.sumnote.twa
+Starting version code for the new app version: 1
+Display mode: standalone     
+Orientation: any
+Status bar color: #315fce
+Splash screen color: #F7F8F6
+Key name: android
 
 ## Data storage and backups
 

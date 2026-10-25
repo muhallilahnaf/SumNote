@@ -556,7 +556,6 @@ export default function App() {
               onClick={openNewNote}
             >
               <span aria-hidden="true">+</span>
-              New note
             </button>
 
             <div className="more-menu">
@@ -603,6 +602,21 @@ export default function App() {
                       }}
                     >
                       Restore backup
+                    </button>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        window.open(
+                          "https://github.com/muhallilahnaf/SumNote",
+                          "_blank",
+                          "noopener,noreferrer"
+                        );
+                      }}
+                    >
+                      GitHub repo ↗
                     </button>
                   </div>
                 </>

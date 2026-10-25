@@ -22,3 +22,55 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+###################
+# bubblewrapcli apk
+# Built artifacts
+*.apk
+!app-release-signed.apk
+*.aar
+*.ap_
+*.aab
+*.idsig
+
+# Files for the Local absolute path configuration
+local.properties
+
+# Gradle files
+.gradle/
+apk/build/
+apk/app/build/
+
+# Android Studio local files and settings
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/nav/
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetSelector.xml
+.idea/deploymentTargetDropDown.xml
+.idea/kotlinc.xml
+*.iml
+*.ipr
+*.iws
+
+# NDk/CMake build artifacts
+.cxx/
+/captures/
+
+# Keystore files (NEVER commit your signing keys!)
+*.jks
+*.keystore
+*.p12
+
+# Google Services configuration file (often contains API keys)
+# Uncomment if you want to keep your Firebase/Google config private
+# google-services.json
+
+# Log files
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
