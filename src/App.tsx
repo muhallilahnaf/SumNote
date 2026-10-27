@@ -5,7 +5,6 @@ import {
   useState
 } from "react";
 import "./App.css";
-import { calculateNote } from "./lib/calculator";
 import {
   createNoteId,
   deleteNote,
@@ -23,6 +22,10 @@ import {
   parseBackupJson
 } from "./lib/backup";
 
+import NoteEditor from "./components/NoteEditor";
+import HomePage from "./components/HomePage";
+
+import { getNoteTitle } from "./lib/utils";
 
 function newBlankNote(): Note {
   const now = new Date().toISOString();
@@ -45,26 +48,6 @@ function upsertNote(notes: Note[], updated: Note): Note[] {
     );
 }
 
-function getNoteTitle(note: Note): string {
-  return note.title.trim() || "Untitled note";
-}
-
-function getNotePreview(body: string): string {
-  return body.trim() || "No content yet";
-}
-
-function formatDate(value: string): string {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "";
-
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric"
-  }).format(date);
-}
-
 export default function App() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeNote, setActiveNote] = useState<Note | null>(null);
@@ -79,11 +62,8 @@ export default function App() {
   const [restorePreview, setRestorePreview] = useState<Note[] | null>(null);
   const [restoreError, setRestoreError] = useState("");
   const [restoreBusy, setRestoreBusy] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
-  const restoreInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLTextAreaElement>(null);
-  const highlightRef = useRef<HTMLDivElement>(null);
   const activeNoteRef = useRef<Note | null>(null);
   const savedSnapshotRef = useRef<Note | null>(null);
   const isNewNoteRef = useRef(false);
@@ -353,16 +333,6 @@ export default function App() {
     }
   }
 
-  function syncScroll() {
-    const editor = editorRef.current;
-    const highlight = highlightRef.current;
-
-    if (editor && highlight) {
-      highlight.scrollTop = editor.scrollTop;
-      highlight.scrollLeft = editor.scrollLeft;
-    }
-  }
-
   const filteredNotes = notes.filter((note) => {
     const query = search.trim().toLowerCase();
 
@@ -442,418 +412,39 @@ export default function App() {
   }
 
   if (activeNote) {
-    const calculation = calculateNote(activeNote.body);
-    const lines = activeNote.body.split("\n");
-    const ambiguousCount = calculation.lines.filter(
-      (line) => line.status === "ambiguous"
-    ).length;
-
-
-
     return (
-      <div className="editor-shell" onKeyDown={handleKeyDown}>
-        <header className="editor-header">
-          <div className="header-inner">
-            <div className="toolbar">
-              <button
-                className="back-button"
-                type="button"
-                onClick={() => void goHome()}
-              >
-                <span aria-hidden="true">←</span>
-                <span>All notes</span>
-              </button>
-
-              <div className="toolbar-actions">
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Undo"
-                  title="Undo (Ctrl+Z)"
-                  disabled={undoStack.length === 0}
-                  onClick={undo}
-                >
-                  ↶
-                </button>
-
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Redo"
-                  title="Redo (Ctrl+Y)"
-                  disabled={redoStack.length === 0}
-                  onClick={redo}
-                >
-                  ↷
-                </button>
-              </div>
-            </div>
-
-            <div className="title-total-row">
-              <input
-                className="title-input"
-                type="text"
-                placeholder="Untitled note"
-                aria-label="Note title"
-                maxLength={200}
-                value={activeNote.title}
-                onChange={(event) => updateTitle(event.target.value)}
-              />
-
-              <div className="total-panel">
-                <span className="total-label">TOTAL</span>
-                <output
-                  className={`total-value ${calculation.total > 0
-                    ? "positive"
-                    : calculation.total < 0
-                      ? "negative"
-                      : ""
-                    }`}
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  {calculation.formattedTotal}
-                </output>
-              </div>
-            </div>
-
-            <div className="save-status" role="status">
-              {error || "Changes save automatically on this device"}
-            </div>
-          </div>
-        </header>
-
-        <main className="editor-workspace">
-          <section className="writing-area" aria-label="Note editor">
-            <div
-              ref={highlightRef}
-              className="highlight-layer"
-              aria-hidden="true"
-            >
-              {activeNote.body.length === 0 ? (
-                <div className="highlight-line placeholder">
-                  {"Start typing…\n\nExamples:\nPocket money 200\nBread -50\nRice 2 x 50"}
-                </div>
-              ) : (
-                lines.map((line, index) => (
-                  <div
-                    key={index}
-                    className={`highlight-line ${calculation.lines[index]?.status === "ambiguous"
-                      ? "ambiguous"
-                      : ""
-                      }`}
-                  >
-                    {line || "\u00a0"}
-                  </div>
-                ))
-              )}
-            </div>
-
-            <textarea
-              ref={editorRef}
-              className="body-textarea"
-              aria-label="Note body"
-              spellCheck
-              value={activeNote.body}
-              onChange={(event) => updateBody(event.target.value)}
-              onScroll={syncScroll}
-            />
-          </section>
-
-          <footer className="editor-footer">
-            {ambiguousCount > 0 ? (
-              <span className="warning-indicator">
-                {ambiguousCount} ambiguous line(s) excluded from total
-              </span>
-            ) : (
-              <span>Type naturally. Your total updates automatically.</span>
-            )}
-          </footer>
-        </main>
-      </div>
+      <NoteEditor
+        note={activeNote}
+        error={error}
+        undoStack={undoStack}
+        redoStack={redoStack}
+        onClose={() => void goHome()}
+        onTitleChange={updateTitle}
+        onBodyChange={updateBody}
+        onUndo={undo}
+        onRedo={redo}
+        onKeyDown={handleKeyDown}
+      />
     );
   }
 
   return (
-    <div className="home-shell">
-      <header className="home-header">
-        <div className="home-header-inner">
-          <div className="brand">
-            <div className="brand-icon" aria-hidden="true">
-              <img src="/sumnote-icon.svg" alt="" />
-            </div>
-            <div>
-              <h1>SumNote</h1>
-              <p>A notepad that calculates as you write.</p>
-            </div>
-          </div>
-
-
-          <div className="home-actions">
-            <button
-              type="button"
-              className="new-note-button"
-              onClick={openNewNote}
-            >
-              <span aria-hidden="true">+</span>
-            </button>
-
-            <div className="more-menu">
-              <button
-                type="button"
-                className="more-menu-trigger"
-                aria-label="More options"
-                aria-haspopup="true"
-                aria-expanded={menuOpen}
-                onClick={() => setMenuOpen((open) => !open)}
-              >
-                <span aria-hidden="true">⋮</span>
-              </button>
-
-              {menuOpen && (
-                <>
-                  <button
-                    type="button"
-                    className="menu-dismiss"
-                    aria-label="Close menu"
-                    onClick={() => setMenuOpen(false)}
-                  />
-
-                  <div className="more-menu-dropdown" role="menu">
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        downloadBackup(notes);
-                      }}
-                      disabled={notes.length === 0}
-                    >
-                      Export backup
-                    </button>
-
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setRestoreError("");
-                        restoreInputRef.current?.click();
-                      }}
-                    >
-                      Restore backup
-                    </button>
-
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        window.open(
-                          "https://github.com/muhallilahnaf/SumNote",
-                          "_blank",
-                          "noopener,noreferrer"
-                        );
-                      }}
-                    >
-                      GitHub repo ↗
-                    </button>
-                  </div>
-                </>
-              )}
-
-              <input
-                ref={restoreInputRef}
-                type="file"
-                accept=".json,application/json"
-                hidden
-                onChange={handleRestoreFileChange}
-              />
-            </div>
-          </div>
-
-
-        </div>
-      </header>
-
-      <main className="home-content">
-
-        {restoreError && (
-          <div className="restore-error" role="alert">
-            {restoreError}
-          </div>
-        )}
-
-        {restorePreview !== null && (
-          <section className="restore-panel">
-            <h2>Review backup</h2>
-
-            <p>
-              Notes in backup: <strong>{restorePreview.length}</strong>
-            </p>
-
-            <p>
-              New notes to add:{" "}
-              <strong>
-                {restorePreview.filter(
-                  (note) => !notes.some((existing) => existing.id === note.id)
-                ).length}
-              </strong>
-            </p>
-
-            <p>
-              Existing notes to update:{" "}
-              <strong>
-                {restorePreview.filter(
-                  (note) => notes.some((existing) => existing.id === note.id)
-                ).length}
-              </strong>
-            </p>
-
-            <p>
-              Notes already on this device that aren't in the backup will be kept.
-              Matching IDs will be updated using the backup's content and timestamps.
-            </p>
-
-            <div className="backup-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={cancelRestore}
-                disabled={restoreBusy}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                onClick={confirmRestore}
-                disabled={restoreBusy}
-              >
-                {restoreBusy ? "Restoring…" : "Confirm restore"}
-              </button>
-            </div>
-          </section>
-        )}
-
-        <div className="collection-heading">
-          <div>
-            <h2>Your notes</h2>
-            <p>
-              {notes.length} {notes.length === 1 ? "note" : "notes"} saved on this device
-            </p>
-          </div>
-
-          <label className="search-box">
-            <span aria-hidden="true">⌕</span>
-            <input
-              type="search"
-              placeholder="Search notes…"
-              aria-label="Search notes"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </label>
-        </div>
-
-        {error && <div className="error-message" role="alert">{error}</div>}
-
-        {filteredNotes.length > 0 ? (
-          <section className="notes-grid" aria-label="Saved notes">
-            {filteredNotes.map((note) => {
-              const calculation = calculateNote(note.body);
-
-              return (
-                <article className="note-card" key={note.id}>
-                  <button
-                    type="button"
-                    className="note-card-main"
-                    onClick={() => openNote(note)}
-                    aria-label={`Open ${getNoteTitle(note)}`}
-                  >
-                    <div className="note-card-heading">
-                      <h3>{getNoteTitle(note)}</h3>
-                      <span className="card-total">
-                        {calculation.formattedTotal}
-                      </span>
-                    </div>
-
-                    <p className="note-preview">
-                      {getNotePreview(note.body)}
-                    </p>
-
-                    <div className="note-card-meta">
-                      <span>{formatDate(note.updatedAt)}</span>
-                      <span>
-                        {note.body.trim()
-                          ? note.body.trim().split("\n").length
-                          : 0}{" "}
-                        lines
-                      </span>
-                    </div>
-                  </button>
-
-                  <div className="note-card-actions">
-                    <button
-                      type="button"
-                      className="text-button"
-                      onClick={() => openNote(note)}
-                    >
-                      Open note
-                    </button>
-
-                    <button
-                      type="button"
-                      className="delete-button"
-                      aria-label={`Delete ${getNoteTitle(note)}`}
-                      onClick={() => void handleDelete(note)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </section>
-        ) : (
-          <section className="empty-state">
-            <div className="empty-icon" aria-hidden="true">✎</div>
-
-            {notes.length === 0 ? (
-              <>
-                <h2>Your notes start here</h2>
-                <p>
-                  Create a note, type your amounts, and let SumNote
-                  calculate the total automatically.
-                </p>
-                <button
-                  className="primary-button"
-                  type="button"
-                  onClick={() => void openNewNote()}
-                >
-                  ＋ Create your first note
-                </button>
-              </>
-            ) : (
-              <>
-                <h2>No matching notes</h2>
-                <p>Try a different search term.</p>
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={() => setSearch("")}
-                >
-                  Clear search
-                </button>
-              </>
-            )}
-          </section>
-        )}
-      </main>
-
-      <footer className="home-footer">
-        Your notes stay in this browser on this device.
-      </footer>
-    </div>
+    <HomePage
+      notes={notes}
+      filteredNotes={filteredNotes}
+      search={search}
+      error={error}
+      restoreError={restoreError}
+      restorePreview={restorePreview}
+      restoreBusy={restoreBusy}
+      onSearchChange={setSearch}
+      onNewNote={() => void openNewNote()}
+      onOpenNote={openNote}
+      onDeleteNote={(note) => void handleDelete(note)}
+      onExportBackup={() => downloadBackup(notes)}
+      onRestoreFileChange={handleRestoreFileChange}
+      onCancelRestore={cancelRestore}
+      onConfirmRestore={() => void confirmRestore()}
+    />
   );
 }
