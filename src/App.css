@@ -257,7 +257,7 @@ textarea:focus-visible {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
-  padding: 17px 17px 12px;
+  padding: 17px 17px 10px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -299,7 +299,7 @@ textarea:focus-visible {
 .note-preview {
   display: -webkit-box;
   min-height: 63px;
-  margin: 14px 0 17px;
+  margin: 12px 0 0;
   overflow: hidden;
   color: #778192;
   font-size: 13px;
@@ -310,50 +310,36 @@ textarea:focus-visible {
   -webkit-line-clamp: 3;
 }
 
-.note-card-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: #9aa2af;
-  font-size: 11px;
-}
-
 .note-card-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 17px;
+  gap: 10px;
+  padding: 9px 17px 11px;
   border-top: 1px solid #f0f1f5;
   background: #fdfdfe;
 }
 
-.text-button,
+.note-card-date {
+  color: #9aa2af;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
 .delete-button {
   padding: 4px 0;
   border: 0;
   background: transparent;
+  color: #9a6470;
   font-size: 12px;
   font-weight: 650;
   cursor: pointer;
 }
 
-.text-button {
-  color: #315fce;
-}
-
-.text-button:hover {
-  color: #264fb3;
-}
-
-.delete-button {
-  color: #9a6470;
-}
-
 .delete-button:hover {
   color: #bd3434;
 }
+
 
 .empty-state {
   display: flex;
@@ -698,12 +684,35 @@ textarea:focus-visible {
   }
 
   .notes-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 13px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .note-card {
-    min-height: 185px;
+    min-height: 175px;
+  }
+
+  .note-card-main {
+    padding: 12px 12px 8px;
+  }
+
+  .note-card-actions {
+    padding: 8px 12px 10px;
+  }
+
+  .note-card-heading h3 {
+    font-size: 14px;
+  }
+
+  .card-total {
+    font-size: 12px;
+  }
+
+  .note-preview {
+    min-height: 46px;
+    margin-top: 10px;
+    font-size: 12px;
+    -webkit-line-clamp: 3;
   }
 
   .empty-state {

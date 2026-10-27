@@ -50,26 +50,10 @@ export default function NoteCard({
         <p className="note-preview">
           {getNotePreview(note.body)}
         </p>
-
-        <div className="note-card-meta">
-          <span>{formatDate(note.updatedAt)}</span>
-          <span>
-            {note.body.trim()
-              ? note.body.trim().split("\n").length
-              : 0}{" "}
-            lines
-          </span>
-        </div>
       </button>
 
       <div className="note-card-actions">
-        <button
-          type="button"
-          className="text-button"
-          onClick={() => onOpen(note)}
-        >
-          Open note
-        </button>
+        <span className="note-card-date">{formatDate(note.updatedAt)}</span>
 
         <button
           type="button"
