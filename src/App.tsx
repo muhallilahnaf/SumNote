@@ -85,6 +85,8 @@ export default function App() {
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const activeNoteRef = useRef<Note | null>(null);
+  const savedSnapshotRef = useRef<Note | null>(null);
+  const isNewNoteRef = useRef(false);
 
   useEffect(() => {
     activeNoteRef.current = activeNote;
@@ -121,17 +123,41 @@ export default function App() {
     };
   }, []);
 
-  // Debounced autosave for the active note.
+  function hasNoteContent(note: Note): boolean {
+    return Boolean(note.title.trim() || note.body.trim());
+  }
+
+  function hasUnsavedChanges(note: Note): boolean {
+    const saved = savedSnapshotRef.current;
+    return !saved || note.title !== saved.title || note.body !== saved.body;
+  }
+
+  async function saveIfChanged(note: Note): Promise<Note | null> {
+    // Do not persist a newly opened note until the user enters a title or body.
+    if (isNewNoteRef.current && !hasNoteContent(note)) return null;
+    if (!hasUnsavedChanges(note)) return null;
+
+    const saved = await saveNote(note);
+    savedSnapshotRef.current = saved;
+    return saved;
+  }
+
+  // Debounced autosave for actual edits only.
   useEffect(() => {
     if (!activeNote) return;
+    if (!hasUnsavedChanges(activeNote)) return;
+    if (isNewNoteRef.current && !hasNoteContent(activeNote)) return;
 
     let cancelled = false;
 
     const timer = window.setTimeout(async () => {
-      try {
-        const saved = await saveNote(activeNote);
+      // Ignore a timer belonging to a note that has already been closed.
+      if (activeNoteRef.current?.id !== activeNote.id) return;
 
-        if (!cancelled) {
+      try {
+        const saved = await saveIfChanged(activeNote);
+
+        if (!cancelled && saved) {
           setNotes((current) => upsertNote(current, saved));
           setError("");
         }
@@ -150,11 +176,11 @@ export default function App() {
     };
   }, [activeNote]);
 
-  // Best-effort save when the tab is hidden or the page exits.
+  // Best-effort save changed notes when the tab is hidden or the page exits.
   useEffect(() => {
     const saveLatest = () => {
       const current = activeNoteRef.current;
-      if (current) void saveNote(current).catch(console.error);
+      if (current) void saveIfChanged(current).catch(console.error);
     };
 
     const handleVisibility = () => {
@@ -172,22 +198,20 @@ export default function App() {
 
   async function openNewNote() {
     const note = newBlankNote();
-
-    try {
-      const saved = await saveNote(note);
-      setNotes((current) => upsertNote(current, saved));
-      setActiveNote(saved);
-      setUndoStack([]);
-      setRedoStack([]);
-      setError("");
-      requestAnimationFrame(() => editorRef.current?.focus());
-    } catch (err) {
-      console.error(err);
-      setError("Could not create a note. Check browser storage.");
-    }
+    isNewNoteRef.current = true;
+    savedSnapshotRef.current = note;
+    activeNoteRef.current = note;
+    setActiveNote(note);
+    setUndoStack([]);
+    setRedoStack([]);
+    setError("");
+    requestAnimationFrame(() => editorRef.current?.focus());
   }
 
   function openNote(note: Note) {
+    isNewNoteRef.current = false;
+    savedSnapshotRef.current = note;
+    activeNoteRef.current = note;
     setActiveNote(note);
     setUndoStack([]);
     setRedoStack([]);
@@ -196,11 +220,21 @@ export default function App() {
 
   async function goHome() {
     const current = activeNoteRef.current;
+    const isNewNote = isNewNoteRef.current;
 
     if (current) {
       try {
-        const saved = await saveNote(current);
-        setNotes((existing) => upsertNote(existing, saved));
+        if (isNewNote && !hasNoteContent(current)) {
+          // A blank new note may have been autosaved before its contents were
+          // cleared, so remove it from storage as well as from the homepage.
+          await deleteNote(current.id);
+          setNotes((existing) => existing.filter((note) => note.id !== current.id));
+        } else {
+          const saved = await saveIfChanged(current);
+          if (saved) {
+            setNotes((existing) => upsertNote(existing, saved));
+          }
+        }
       } catch (err) {
         console.error(err);
         setError("The note could not be saved. Please try again.");
@@ -208,6 +242,9 @@ export default function App() {
       }
     }
 
+    activeNoteRef.current = null;
+    savedSnapshotRef.current = null;
+    isNewNoteRef.current = false;
     setActiveNote(null);
     setUndoStack([]);
     setRedoStack([]);
@@ -228,6 +265,9 @@ export default function App() {
       );
 
       if (activeNoteRef.current?.id === note.id) {
+        activeNoteRef.current = null;
+        savedSnapshotRef.current = null;
+        isNewNoteRef.current = false;
         setActiveNote(null);
       }
 
@@ -295,9 +335,9 @@ export default function App() {
 
     if (key === "s") {
       event.preventDefault();
-      void saveNote(activeNote)
+      void saveIfChanged(activeNote)
         .then((saved) => {
-          setNotes((current) => upsertNote(current, saved));
+          if (saved) setNotes((current) => upsertNote(current, saved));
           setError("");
         })
         .catch(() => setError("Unable to save this note."));

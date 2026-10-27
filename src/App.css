@@ -904,11 +904,17 @@ textarea:focus-visible {
 
 @media (max-width: 480px) {
   .home-actions {
-    width: 100%;
+    width: auto;
+    margin-left: auto;
+    justify-content: flex-end;
   }
 
   .new-note-button {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 4rem;
     min-height: 44px;
+    padding: 0.65rem 1rem;
   }
 }
 
